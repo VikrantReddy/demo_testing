@@ -1,13 +1,30 @@
 version: '3.8'
 
+# ==============================================================================
+# DEVELOPMENT DOCKER COMPOSE CONFIGURATION
+# ==============================================================================
+# NOTE: This compose file is for DEVELOPMENT purposes.
+#
+# The source code volumes (./backend/src:/app/src, ./frontend/src:/app/src)
+# enable hot-reload for faster development but are NOT suitable for production.
+#
+# For production deployment:
+# 1. Create a separate docker-compose.prod.yml without volume mounts
+# 2. Remove development-specific environment variables
+# 3. Use production-grade secrets management
+# 4. Configure proper logging and monitoring
+# ==============================================================================
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: school_mgmt_db
+    env_file:
+      - .env.docker
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: school_mgmt
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5433:5432"
     volumes:
@@ -15,10 +32,13 @@ services:
       - ./seed_db/tables.sql:/docker-entrypoint-initdb.d/01-tables.sql
       - ./seed_db/seed-db.sql:/docker-entrypoint-initdb.d/02-seed-db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      # Use $$ to escape the variable for docker-compose
+      # Falls back to 'postgres' if POSTGRES_USER is not set
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - school_mgmt_network
 
@@ -27,26 +47,44 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: school_mgmt_backend
+    env_file:
+      - .env.docker
     ports:
       - "5008:5007"
     environment:
-      PORT: 5007
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/school_mgmt  # Internal Docker network uses 5432
-      JWT_ACCESS_TOKEN_SECRET: your_super_secret_access_token_key_here
-      JWT_REFRESH_TOKEN_SECRET: your_super_secret_refresh_token_key_here
-      CSRF_TOKEN_SECRET: your_csrf_secret_key_here
-      EMAIL_VERIFICATION_TOKEN_SECRET: your_email_verification_secret_here
-      PASSWORD_SETUP_TOKEN_SECRET: your_password_setup_secret_here
-      UI_URL: http://localhost:5173
-      API_URL: http://localhost:5007
-      COOKIE_DOMAIN: localhost
-      NODE_ENV: development
+      PORT: ${PORT:-5007}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_TOKEN_SECRET}
+      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET}
+      CSRF_TOKEN_SECRET: ${CSRF_TOKEN_SECRET}
+      EMAIL_VERIFICATION_TOKEN_SECRET: ${EMAIL_VERIFICATION_TOKEN_SECRET}
+      PASSWORD_SETUP_TOKEN_SECRET: ${PASSWORD_SETUP_TOKEN_SECRET}
+      JWT_ACCESS_TOKEN_TIME_IN_MS: ${JWT_ACCESS_TOKEN_TIME_IN_MS:-900000}
+      JWT_REFRESH_TOKEN_TIME_IN_MS: ${JWT_REFRESH_TOKEN_TIME_IN_MS:-28800000}
+      CSRF_TOKEN_TIME_IN_MS: ${CSRF_TOKEN_TIME_IN_MS:-950000}
+      EMAIL_VERIFICATION_TOKEN_TIME_IN_MS: ${EMAIL_VERIFICATION_TOKEN_TIME_IN_MS:-18000000}
+      PASSWORD_SETUP_TOKEN_TIME_IN_MS: ${PASSWORD_SETUP_TOKEN_TIME_IN_MS:-300000}
+      UI_URL: ${UI_URL:-http://localhost:5173}
+      API_URL: ${API_URL:-http://localhost:5007}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-localhost}
+      NODE_ENV: ${NODE_ENV:-development}
+      MAIL_FROM_USER: ${MAIL_FROM_USER}
+      RESEND_API_KEY: ${RESEND_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      # Health endpoint validates backend is ready to serve requests
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5007/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - school_mgmt_network
     volumes:
+      # Development volume mount for hot-reload
+      # REMOVE this line for production deployments
       - ./backend/src:/app/src
 
   frontend:
@@ -54,16 +92,21 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: school_mgmt_frontend
+    env_file:
+      - .env.docker
     ports:
       - "5173:5173"
     environment:
-      VITE_API_URL: http://localhost:5008
-      VITE_APP_NAME: Student Management System
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:5008}
+      VITE_APP_NAME: ${VITE_APP_NAME:-Student Management System}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - school_mgmt_network
     volumes:
+      # Development volume mount for hot-reload
+      # REMOVE this line for production deployments
       - ./frontend/src:/app/src
 
 volumes:

@@ -2,6 +2,16 @@ const express = require("express");
 const router = express.Router();
 
 const { authenticateToken, handle404Error, csrfProtection, checkApiAccess } = require("../middlewares");
+
+// Health check endpoint - no authentication required
+// Used by Docker healthcheck and monitoring systems
+router.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    service: "school-mgmt-backend"
+  });
+});
 const { studentsRoutes } = require("../modules/students/sudents-router.js");
 const { authRoutes } = require("../modules/auth/auth-router.js");
 const { rpRoutes } = require("../modules/roles-and-permissions/rp-router.js");
