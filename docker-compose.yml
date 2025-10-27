@@ -34,13 +34,22 @@ services:
     healthcheck:
       # Use $$ to escape the variable for docker-compose
       # Falls back to 'postgres' if POSTGRES_USER is not set
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      # -d flag verifies database exists and is ready (not just server listening)
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
     networks:
       - school_mgmt_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
   backend:
     build:
@@ -75,7 +84,8 @@ services:
         condition: service_healthy
     healthcheck:
       # Health endpoint validates backend is ready to serve requests
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5007/api/v1/health"]
+      # Use curl (installed in Dockerfile) with -f flag to fail on HTTP errors
+      test: ["CMD", "curl", "-f", "http://localhost:5007/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -86,28 +96,15 @@ services:
       # Development volume mount for hot-reload
       # REMOVE this line for production deployments
       - ./backend/src:/app/src
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: school_mgmt_frontend
-    env_file:
-      - .env.docker
-    ports:
-      - "5173:5173"
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:5008}
-      VITE_APP_NAME: ${VITE_APP_NAME:-Student Management System}
-    depends_on:
-      backend:
-        condition: service_healthy
-    networks:
-      - school_mgmt_network
-    volumes:
-      # Development volume mount for hot-reload
-      # REMOVE this line for production deployments
-      - ./frontend/src:/app/src
 
 volumes:
   postgres_data:
