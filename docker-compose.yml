@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: school_mgmt_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: school_mgmt
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./seed_db/tables.sql:/docker-entrypoint-initdb.d/01-tables.sql
+      - ./seed_db/seed-db.sql:/docker-entrypoint-initdb.d/02-seed-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - school_mgmt_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: school_mgmt_backend
+    ports:
+      - "5008:5007"
+    environment:
+      PORT: 5007
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/school_mgmt  # Internal Docker network uses 5432
+      JWT_ACCESS_TOKEN_SECRET: your_super_secret_access_token_key_here
+      JWT_REFRESH_TOKEN_SECRET: your_super_secret_refresh_token_key_here
+      CSRF_TOKEN_SECRET: your_csrf_secret_key_here
+      EMAIL_VERIFICATION_TOKEN_SECRET: your_email_verification_secret_here
+      PASSWORD_SETUP_TOKEN_SECRET: your_password_setup_secret_here
+      UI_URL: http://localhost:5173
+      API_URL: http://localhost:5007
+      COOKIE_DOMAIN: localhost
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - school_mgmt_network
+    volumes:
+      - ./backend/src:/app/src
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: school_mgmt_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:5008
+      VITE_APP_NAME: Student Management System
+    depends_on:
+      - backend
+    networks:
+      - school_mgmt_network
+    volumes:
+      - ./frontend/src:/app/src
+
+volumes:
+  postgres_data:
+
+networks:
+  school_mgmt_network:
+    driver: bridge
