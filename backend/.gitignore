@@ -1,2 +1,6 @@
 node_modules
 hashPwd.js
+
+*.md
+CLAUDE.env
+SETUP.md
