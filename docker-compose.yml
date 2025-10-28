@@ -1,0 +1,114 @@
+version: '3.8'
+
+# ==============================================================================
+# DEVELOPMENT DOCKER COMPOSE CONFIGURATION
+# ==============================================================================
+# NOTE: This compose file is for DEVELOPMENT purposes.
+#
+# The source code volumes (./backend/src:/app/src, ./frontend/src:/app/src)
+# enable hot-reload for faster development but are NOT suitable for production.
+#
+# For production deployment:
+# 1. Create a separate docker-compose.prod.yml without volume mounts
+# 2. Remove development-specific environment variables
+# 3. Use production-grade secrets management
+# 4. Configure proper logging and monitoring
+# ==============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: school_mgmt_db
+    env_file:
+      - .env.docker
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./seed_db/tables.sql:/docker-entrypoint-initdb.d/01-tables.sql
+      - ./seed_db/seed-db.sql:/docker-entrypoint-initdb.d/02-seed-db.sql
+    healthcheck:
+      # Use $$ to escape the variable for docker-compose
+      # Falls back to 'postgres' if POSTGRES_USER is not set
+      # -d flag verifies database exists and is ready (not just server listening)
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - school_mgmt_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: school_mgmt_backend
+    env_file:
+      - .env.docker
+    ports:
+      - "5008:5007"
+    environment:
+      PORT: ${PORT:-5007}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_TOKEN_SECRET}
+      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET}
+      CSRF_TOKEN_SECRET: ${CSRF_TOKEN_SECRET}
+      EMAIL_VERIFICATION_TOKEN_SECRET: ${EMAIL_VERIFICATION_TOKEN_SECRET}
+      PASSWORD_SETUP_TOKEN_SECRET: ${PASSWORD_SETUP_TOKEN_SECRET}
+      JWT_ACCESS_TOKEN_TIME_IN_MS: ${JWT_ACCESS_TOKEN_TIME_IN_MS:-900000}
+      JWT_REFRESH_TOKEN_TIME_IN_MS: ${JWT_REFRESH_TOKEN_TIME_IN_MS:-28800000}
+      CSRF_TOKEN_TIME_IN_MS: ${CSRF_TOKEN_TIME_IN_MS:-950000}
+      EMAIL_VERIFICATION_TOKEN_TIME_IN_MS: ${EMAIL_VERIFICATION_TOKEN_TIME_IN_MS:-18000000}
+      PASSWORD_SETUP_TOKEN_TIME_IN_MS: ${PASSWORD_SETUP_TOKEN_TIME_IN_MS:-300000}
+      UI_URL: ${UI_URL:-http://localhost:5173}
+      API_URL: ${API_URL:-http://localhost:5007}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-localhost}
+      NODE_ENV: ${NODE_ENV:-development}
+      MAIL_FROM_USER: ${MAIL_FROM_USER}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Health endpoint validates backend is ready to serve requests
+      # Use curl (installed in Dockerfile) with -f flag to fail on HTTP errors
+      test: ["CMD", "curl", "-f", "http://localhost:5007/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - school_mgmt_network
+    volumes:
+      # Development volume mount for hot-reload
+      # REMOVE this line for production deployments
+      - ./backend/src:/app/src
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+
+
+volumes:
+  postgres_data:
+
+networks:
+  school_mgmt_network:
+    driver: bridge
