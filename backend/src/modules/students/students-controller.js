@@ -18,15 +18,18 @@ const validateStudentPayload = (body, operation = "create") => {
 
     // Email is required for create operations
     if (operation === "create") {
-        if (!body.email || typeof body.email !== "string") {
+        if (!body.email || typeof body.email !== "string" || body.email.trim() === "") {
             throw new ApiError(400, "Email is required for student creation.");
         }
-        validateEmail(body.email);
+        validateEmail(body.email.trim());
     }
 
     // Email is optional for update, but validate if provided
     if (operation === "update" && body.email) {
-        validateEmail(body.email);
+        if (typeof body.email !== "string" || body.email.trim() === "") {
+            throw new ApiError(400, "Email must be a non-empty string.");
+        }
+        validateEmail(body.email.trim());
     }
 };
 
@@ -70,8 +73,11 @@ const handleAddStudent = asyncHandler(async (req, res) => {
     // Validate request body
     validateStudentPayload(req.body, "create");
 
-    log.info("Creating new student", { email: req.body.email });
-    const result = await addNewStudent(req.body);
+    // Trim email before passing to service
+    const payload = { ...req.body, email: req.body.email.trim() };
+
+    log.info("Creating new student", { email: payload.email });
+    const result = await addNewStudent(payload);
     log.success("Student created successfully", { studentId: result.id, email: result.email });
 
     res.status(201).json({
@@ -81,16 +87,23 @@ const handleAddStudent = asyncHandler(async (req, res) => {
 });
 
 const handleUpdateStudent = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    // Validate ID parameter from URL
+    validateIdParam(id);
+
     // Validate request body
     validateStudentPayload(req.body, "update");
 
-    // Ensure ID is present in body for update
-    if (!req.body.id) {
-        throw new ApiError(400, "Student ID is required for update operation.");
+    // Use URL parameter as the single source of truth for student ID
+    // Trim email if provided
+    const payload = { id, ...req.body };
+    if (payload.email) {
+        payload.email = payload.email.trim();
     }
 
-    log.info("Updating student", { studentId: req.body.id });
-    const result = await updateStudent(req.body);
+    log.info("Updating student", { studentId: id });
+    const result = await updateStudent(payload);
     log.success("Student updated successfully", { studentId: result.id });
 
     res.status(200).json({

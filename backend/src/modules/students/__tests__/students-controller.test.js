@@ -82,14 +82,16 @@ describe("Students Controller", () => {
   });
 
   it("handleUpdateStudent should call updateStudent and return 200", async () => {
-    const payload = { id: 1, name: "Updated", email: "updated@test.com" };
+    const bodyPayload = { name: "Updated", email: "updated@test.com" };
+    const expectedPayload = { id: "1", ...bodyPayload };
     const result = { message: "Updated" };
     updateStudent.mockResolvedValue(result);
-    req.body = payload;
+    req.params = { id: "1" };
+    req.body = bodyPayload;
 
     await handleUpdateStudent(req, res, next);
 
-    expect(updateStudent).toHaveBeenCalledWith(payload);
+    expect(updateStudent).toHaveBeenCalledWith(expectedPayload);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       success: true,
@@ -132,15 +134,30 @@ describe("Students Controller", () => {
   });
 
   describe("Validation Tests", () => {
+    const { ApiError } = require("../../../utils/api-error");
+
     it("handleAddStudent should validate email is provided", async () => {
       const payload = { name: "New Student" };
       req.body = payload;
 
       await handleAddStudent(req, res, next);
 
-      // asyncHandler catches errors and passes to next(), but doesn't reject
-      // Validation errors are thrown and handled by global error handler
-      expect(res.status).not.toHaveBeenCalledWith(201);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(400);
+      expect(error.message).toContain("Email is required");
+    });
+
+    it("handleAddStudent should validate email is not empty string", async () => {
+      const payload = { name: "New Student", email: "   " };
+      req.body = payload;
+
+      await handleAddStudent(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(400);
+      expect(error.message).toContain("Email is required");
     });
 
     it("handleGetStudentDetail should validate positive ID", async () => {
@@ -148,7 +165,46 @@ describe("Students Controller", () => {
 
       await handleGetStudentDetail(req, res, next);
 
-      expect(res.status).not.toHaveBeenCalledWith(200);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(400);
+      expect(error.message).toContain("Invalid student ID");
+    });
+
+    it("handleUpdateStudent should validate positive ID", async () => {
+      req.params = { id: "-1" };
+      req.body = { name: "Updated" };
+
+      await handleUpdateStudent(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(400);
+      expect(error.message).toContain("Invalid student ID");
+    });
+
+    it("handleUpdateStudent should validate body is not empty", async () => {
+      req.params = { id: "1" };
+      req.body = {};
+
+      await handleUpdateStudent(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(400);
+      expect(error.message).toContain("Student data is required");
+    });
+
+    it("handleUpdateStudent should validate email is not empty string", async () => {
+      req.params = { id: "1" };
+      req.body = { email: "   " };
+
+      await handleUpdateStudent(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(400);
+      expect(error.message).toContain("Email must be a non-empty string");
     });
 
     it("handleStudentStatus should validate authentication", async () => {
@@ -158,7 +214,10 @@ describe("Students Controller", () => {
 
       await handleStudentStatus(req, res, next);
 
-      expect(res.status).not.toHaveBeenCalledWith(200);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(401);
+      expect(error.message).toContain("User authentication required");
     });
 
     it("handleStudentStatus should validate status is boolean", async () => {
@@ -168,7 +227,10 @@ describe("Students Controller", () => {
 
       await handleStudentStatus(req, res, next);
 
-      expect(res.status).not.toHaveBeenCalledWith(200);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(400);
+      expect(error.message).toContain("Status must be a boolean");
     });
 
     it("handleDeleteStudent should validate authentication", async () => {
@@ -177,7 +239,10 @@ describe("Students Controller", () => {
 
       await handleDeleteStudent(req, res, next);
 
-      expect(res.status).not.toHaveBeenCalledWith(204);
+      expect(next).toHaveBeenCalledWith(expect.any(ApiError));
+      const error = next.mock.calls[0][0];
+      expect(error.statusCode).toBe(401);
+      expect(error.message).toContain("User authentication required");
     });
   });
 });
