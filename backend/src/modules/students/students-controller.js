@@ -19,7 +19,7 @@ const validateStudentPayload = (body, operation = "create") => {
     // Email is required for create operations
     if (operation === "create") {
         if (!body.email || typeof body.email !== "string" || body.email.trim() === "") {
-            throw new ApiError(400, "Email is required for student creation.");
+            throw new ApiError(400, "A non-empty email is required for student creation.");
         }
         validateEmail(body.email.trim());
     }
