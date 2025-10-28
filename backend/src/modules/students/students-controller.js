@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const { ApiError } = require("../../utils");
+const log = require("../../utils/log");
 const { getAllStudents, addNewStudent, getStudentDetail, setStudentStatus, updateStudent, deleteStudent } = require("./students-service");
 
 // Validation helpers
@@ -55,7 +56,9 @@ const validateUserAuthentication = (user) => {
 };
 
 const handleGetAllStudents = asyncHandler(async (req, res) => {
+    log.info("Fetching all students", { filters: req.query });
     const students = await getAllStudents(req.query);
+    log.success(`Retrieved ${students.length} students`, { count: students.length });
     res.status(200).json({
         success: true,
         data: students,
@@ -67,7 +70,10 @@ const handleAddStudent = asyncHandler(async (req, res) => {
     // Validate request body
     validateStudentPayload(req.body, "create");
 
+    log.info("Creating new student", { email: req.body.email });
     const result = await addNewStudent(req.body);
+    log.success("Student created successfully", { studentId: result.id, email: result.email });
+
     res.status(201).json({
         success: true,
         data: result
@@ -83,7 +89,10 @@ const handleUpdateStudent = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Student ID is required for update operation.");
     }
 
+    log.info("Updating student", { studentId: req.body.id });
     const result = await updateStudent(req.body);
+    log.success("Student updated successfully", { studentId: result.id });
+
     res.status(200).json({
         success: true,
         data: result
@@ -96,7 +105,10 @@ const handleGetStudentDetail = asyncHandler(async (req, res) => {
     // Validate ID parameter
     validateIdParam(id);
 
+    log.debug("Fetching student details", { studentId: id });
     const student = await getStudentDetail(id);
+    log.info("Student details retrieved", { studentId: id });
+
     return res.status(200).json({
         success: true,
         data: student
@@ -115,8 +127,11 @@ const handleStudentStatus = asyncHandler(async (req, res) => {
     // Validate user authentication and authorization
     validateUserAuthentication(req.user);
 
+    log.info("Updating student status", { studentId: id, status: req.body.status, reviewerId: req.user.id });
     const payload = { userId: id, status: req.body.status, reviewerId: req.user.id };
     const result = await setStudentStatus(payload);
+    log.success("Student status updated", { studentId: id, newStatus: req.body.status });
+
     return res.status(200).json({
         success: true,
         data: result
@@ -138,7 +153,10 @@ const handleDeleteStudent = asyncHandler(async (req, res) => {
     //     throw new ApiError(403, "You do not have permission to delete students.");
     // }
 
+    log.info("Deleting student", { studentId: id, deletedBy: req.user.id });
     const result = await deleteStudent(id);
+    log.success("Student deleted successfully", { studentId: id });
+
     return res.status(204).end();
 });
 
