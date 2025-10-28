@@ -4,6 +4,7 @@ const {
   handleUpdateStudent,
   handleGetStudentDetail,
   handleStudentStatus,
+  handleDeleteStudent,
 } = require("../students-controller");
 
 const {
@@ -12,6 +13,7 @@ const {
   getStudentDetail,
   setStudentStatus,
   updateStudent,
+  deleteStudent,
 } = require("../students-service");
 
 jest.mock("../students-service");
@@ -27,7 +29,7 @@ describe("Students Controller", () => {
 
   beforeEach(() => {
     req = { body: {}, params: {}, query: {}, user: { id: 1 } };
-    res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    res = { status: jest.fn().mockReturnThis(), json: jest.fn(), end: jest.fn() };
     next = jest.fn();
     jest.clearAllMocks();
   });
@@ -41,7 +43,11 @@ describe("Students Controller", () => {
 
     expect(getAllStudents).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(mockStudents);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: mockStudents,
+      count: mockStudents.length
+    });
   });
 
   it("handleGetStudentDetail should call getStudentDetail and return 200", async () => {
@@ -53,7 +59,10 @@ describe("Students Controller", () => {
 
     expect(getStudentDetail).toHaveBeenCalledWith("1");
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(mockStudent);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: mockStudent
+    });
   });
 
   it("handleAddStudent should call addNewStudent and return 201", async () => {
@@ -66,11 +75,14 @@ describe("Students Controller", () => {
 
     expect(addNewStudent).toHaveBeenCalledWith(payload);
     expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(result);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: result
+    });
   });
 
   it("handleUpdateStudent should call updateStudent and return 200", async () => {
-    const payload = { id: 1, name: "Updated" };
+    const payload = { id: 1, name: "Updated", email: "updated@test.com" };
     const result = { message: "Updated" };
     updateStudent.mockResolvedValue(result);
     req.body = payload;
@@ -79,7 +91,10 @@ describe("Students Controller", () => {
 
     expect(updateStudent).toHaveBeenCalledWith(payload);
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(result);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: result
+    });
   });
 
   it("handleStudentStatus should call setStudentStatus and return 200", async () => {
@@ -97,6 +112,72 @@ describe("Students Controller", () => {
       reviewerId: 2,
     });
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(result);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: result
+    });
+  });
+
+  it("handleDeleteStudent should call deleteStudent and return 204", async () => {
+    const result = { message: "Student deleted successfully" };
+    deleteStudent.mockResolvedValue(result);
+    req.params = { id: "1" };
+    req.user = { id: 2 };
+
+    await handleDeleteStudent(req, res, next);
+
+    expect(deleteStudent).toHaveBeenCalledWith("1");
+    expect(res.status).toHaveBeenCalledWith(204);
+    expect(res.end).toHaveBeenCalled();
+  });
+
+  describe("Validation Tests", () => {
+    it("handleAddStudent should validate email is provided", async () => {
+      const payload = { name: "New Student" };
+      req.body = payload;
+
+      await handleAddStudent(req, res, next);
+
+      // asyncHandler catches errors and passes to next(), but doesn't reject
+      // Validation errors are thrown and handled by global error handler
+      expect(res.status).not.toHaveBeenCalledWith(201);
+    });
+
+    it("handleGetStudentDetail should validate positive ID", async () => {
+      req.params = { id: "-1" };
+
+      await handleGetStudentDetail(req, res, next);
+
+      expect(res.status).not.toHaveBeenCalledWith(200);
+    });
+
+    it("handleStudentStatus should validate authentication", async () => {
+      req.params = { id: "1" };
+      req.body = { status: true };
+      req.user = null;
+
+      await handleStudentStatus(req, res, next);
+
+      expect(res.status).not.toHaveBeenCalledWith(200);
+    });
+
+    it("handleStudentStatus should validate status is boolean", async () => {
+      req.params = { id: "1" };
+      req.body = { status: "true" };
+      req.user = { id: 2 };
+
+      await handleStudentStatus(req, res, next);
+
+      expect(res.status).not.toHaveBeenCalledWith(200);
+    });
+
+    it("handleDeleteStudent should validate authentication", async () => {
+      req.params = { id: "1" };
+      req.user = null;
+
+      await handleDeleteStudent(req, res, next);
+
+      expect(res.status).not.toHaveBeenCalledWith(204);
+    });
   });
 });

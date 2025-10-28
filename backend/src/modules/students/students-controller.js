@@ -1,5 +1,58 @@
 const asyncHandler = require("express-async-handler");
+const { ApiError } = require("../../utils");
 const { getAllStudents, addNewStudent, getStudentDetail, setStudentStatus, updateStudent, deleteStudent } = require("./students-service");
+
+// Validation helpers
+const validateIdParam = (id) => {
+    const numId = parseInt(id, 10);
+    if (!Number.isInteger(numId) || numId <= 0) {
+        throw new ApiError(400, "Invalid student ID. ID must be a positive integer.");
+    }
+};
+
+const validateStudentPayload = (body, operation = "create") => {
+    if (!body || Object.keys(body).length === 0) {
+        throw new ApiError(400, `Student data is required for ${operation} operation.`);
+    }
+
+    // Email is required for create operations
+    if (operation === "create") {
+        if (!body.email || typeof body.email !== "string") {
+            throw new ApiError(400, "Email is required for student creation.");
+        }
+        validateEmail(body.email);
+    }
+
+    // Email is optional for update, but validate if provided
+    if (operation === "update" && body.email) {
+        validateEmail(body.email);
+    }
+};
+
+const validateEmail = (email) => {
+    // RFC 5321/5322 compliant basic email validation
+    // This is a simplified validation - use library for production
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        throw new ApiError(400, "Invalid email format provided.");
+    }
+};
+
+const validateStatusPayload = (body) => {
+    if (body.status === undefined || body.status === null) {
+        throw new ApiError(400, "Status field is required.");
+    }
+
+    if (typeof body.status !== "boolean") {
+        throw new ApiError(400, "Status must be a boolean value (true/false).");
+    }
+};
+
+const validateUserAuthentication = (user) => {
+    if (!user || !user.id) {
+        throw new ApiError(401, "User authentication required for this operation.");
+    }
+};
 
 const handleGetAllStudents = asyncHandler(async (req, res) => {
     const students = await getAllStudents(req.query);
@@ -11,6 +64,9 @@ const handleGetAllStudents = asyncHandler(async (req, res) => {
 });
 
 const handleAddStudent = asyncHandler(async (req, res) => {
+    // Validate request body
+    validateStudentPayload(req.body, "create");
+
     const result = await addNewStudent(req.body);
     res.status(201).json({
         success: true,
@@ -19,6 +75,14 @@ const handleAddStudent = asyncHandler(async (req, res) => {
 });
 
 const handleUpdateStudent = asyncHandler(async (req, res) => {
+    // Validate request body
+    validateStudentPayload(req.body, "update");
+
+    // Ensure ID is present in body for update
+    if (!req.body.id) {
+        throw new ApiError(400, "Student ID is required for update operation.");
+    }
+
     const result = await updateStudent(req.body);
     res.status(200).json({
         success: true,
@@ -28,6 +92,10 @@ const handleUpdateStudent = asyncHandler(async (req, res) => {
 
 const handleGetStudentDetail = asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    // Validate ID parameter
+    validateIdParam(id);
+
     const student = await getStudentDetail(id);
     return res.status(200).json({
         success: true,
@@ -36,7 +104,18 @@ const handleGetStudentDetail = asyncHandler(async (req, res) => {
 });
 
 const handleStudentStatus = asyncHandler(async (req, res) => {
-    const payload = { userId: req.params.id, status: req.body.status, reviewerId: req.user.id };
+    const { id } = req.params;
+
+    // Validate ID parameter
+    validateIdParam(id);
+
+    // Validate status payload
+    validateStatusPayload(req.body);
+
+    // Validate user authentication and authorization
+    validateUserAuthentication(req.user);
+
+    const payload = { userId: id, status: req.body.status, reviewerId: req.user.id };
     const result = await setStudentStatus(payload);
     return res.status(200).json({
         success: true,
@@ -46,11 +125,21 @@ const handleStudentStatus = asyncHandler(async (req, res) => {
 
 const handleDeleteStudent = asyncHandler(async (req, res) => {
     const { id } = req.params;
+
+    // Validate ID parameter
+    validateIdParam(id);
+
+    // Validate user authentication and authorization
+    validateUserAuthentication(req.user);
+
+    // TODO: Add role-based access control
+    // Only admin/teachers should be able to delete students
+    // if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
+    //     throw new ApiError(403, "You do not have permission to delete students.");
+    // }
+
     const result = await deleteStudent(id);
-    return res.status(200).json({
-        success: true,
-        data: result
-    });
+    return res.status(204).end();
 });
 
 module.exports = {
