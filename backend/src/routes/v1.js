@@ -2,15 +2,31 @@ const express = require("express");
 const router = express.Router();
 
 const { authenticateToken, handle404Error, csrfProtection, checkApiAccess } = require("../middlewares");
+const { db } = require("../config");
+const log = require("../utils/log");
 
 // Health check endpoint - no authentication required
-// Used by Docker healthcheck and monitoring systems
-router.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    service: "school-mgmt-backend"
-  });
+// Used by Docker healthcheck to verify service is running
+router.get("/health", async (req, res) => {
+  try {
+    // Check database connectivity
+    await db.query("SELECT 1");
+
+    res.status(200).json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      service: "school-mgmt-backend",
+    });
+  } catch (error) {
+    log.error("Health check failed - database unavailable", {
+      error: error.message,
+    });
+
+    res.status(503).json({
+      status: "error",
+      message: "Database connection failed",
+    });
+  }
 });
 const { studentsRoutes } = require("../modules/students/sudents-router.js");
 const { authRoutes } = require("../modules/auth/auth-router.js");

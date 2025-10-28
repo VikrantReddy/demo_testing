@@ -111,11 +111,26 @@ const findStudentToUpdate = async (paylaod) => {
     return rows;
 }
 
+const softDeleteStudentById = async (id) => {
+    const now = new Date();
+    const query = `
+        UPDATE users
+        SET
+            is_active = false,
+            updated_dt = $1
+        WHERE id = $2 AND role_id = 3
+    `;
+    const queryParams = [now, id];
+    const { rowCount } = await processDBRequest({ query, queryParams });
+    return rowCount;
+}
+
 module.exports = {
     getRoleId,
     findAllStudents,
     addOrUpdateStudent,
     findStudentDetail,
     findStudentToSetStatus,
-    findStudentToUpdate
+    findStudentToUpdate,
+    softDeleteStudentById
 };
