@@ -1,266 +1,275 @@
-# Student Management System - Developer Skill Test
+# Work Completed - Backend Assessment
 
-A comprehensive full-stack web application for managing school operations including students, staff, classes, notices, and leave management. This project serves as a skill assessment platform for **Frontend**, **Backend**, and **Blockchain** developers.
-
-## 🏗️ Project Architecture
-
-```
-skill-test/
-├── frontend/           # React + TypeScript + Material-UI
-├── backend/            # Node.js + Express + PostgreSQL
-├── go-service/         # Golang microservice for PDF reports
-├── seed_db/           # Database schema and seed data
-└── README.md          # This file
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js (v16 or higher)
-- PostgreSQL (v12 or higher)
-- npm or yarn
-
-### 1. Backend Setup
-```bash
-cd backend
-npm install
-cp .env.example .env  # Configure your environment variables
-npm start
-```
-
-### 2. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### 3. Access the Application
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:5007
-- **Demo Credentials**: 
-  - Email: `admin@school-admin.com`
-  - Password: `3OU4zn3q6Zh9`
-
-### ** Database Setup **
-```bash
-# Create PostgreSQL database
-createdb school_mgmt
-
-# Run database migrations
-psql -d school_mgmt -f seed_db/tables.sql
-psql -d school_mgmt -f seed_db/seed-db.sql
-```
-
-## 🎯 Skill Test Problems
-
-### **Problem 1: Frontend Developer Challenge**
-**Fix "Add New Notice" Page**
-- **Location**: `/app/notices/add`
-- **Issue**: When clicking the 'Save' button, the 'description' field doesn't get saved
-- **Skills Tested**: React, Form handling, State management, API integration
-- **Expected Fix**: Ensure description field is properly bound and submitted
-
-### **Problem 2: Backend Developer Challenge**
-**Complete CRUD Operations in Student Management**
-- **Location**: `/src/modules/students/students-controller.js`
-- **Issue**: Implement missing CRUD operations for student management
-- **Skills Tested**: Node.js, Express, PostgreSQL, API design, Error handling
-- **Expected Implementation**: Full Create, Read, Update, Delete operations
-
-### **Problem 3: Blockchain Developer Challenge**
-**Implement Certificate Verification System**
-- **Objective**: Add blockchain-based certificate verification for student achievements
-- **Skills Tested**: Smart contracts, Web3 integration, Ethereum/Polygon
-- **Requirements**:
-  - Create smart contract for certificate issuance and verification
-  - Integrate Web3 wallet connection in frontend
-  - Add certificate management in admin panel
-  - Implement IPFS for certificate metadata storage
-
-### **Problem 4: Golang Developer Challenge**
-**Build PDF Report Generation Microservice via API Integration**
-- **Objective**: Create a standalone microservice in Go to generate PDF reports for students by consuming the existing Node.js backend API.
-- **Location**: A new `go-service/` directory at the root of the project.
-- **Description**: This service will connect to the existing Node.js backend's `/api/v1/students/:id` endpoint to fetch student data, and then use the returned JSON to generate a downloadable PDF report.
-- **Skills Tested**: Golang, REST API consumption, JSON parsing, file generation, microservice integration.
-- **Requirements**:
-  - Create a new endpoint `GET /api/v1/students/:id/report` in the Go service.
-  - The Go service must not connect directly to the database; it must fetch data from the Node.js API.
-  - The developer **must** have the PostgreSQL database and the Node.js backend running to complete this task.
-
-### **Problem 5: DevOps Engineer Challenge**
-**Containerize the Full Application Stack**
-- **Objective**: Create a multi-container setup to run the entire application stack (Frontend, Backend, Database) using Docker and Docker Compose.
-- **Location**: `Dockerfile` in the `frontend` and `backend` directories, and a `docker-compose.yml` file at the project root.
-- **Description**: The goal is to make the entire development environment reproducible and easy to launch with a single command. The candidate must ensure all services can communicate with each other inside the Docker network.
-- **Skills Tested**: Docker, Docker Compose, container networking, database seeding in a container, environment variable management.
-- **Requirements**:
-  - Write a `Dockerfile` for the `frontend` service.
-  - Write a `Dockerfile` for the `backend` service.
-  - Create a `docker-compose.yml` at the root to define and link the `frontend`, `backend`, and `postgres` services.
-  - The `postgres` service must be automatically seeded with the data from the `seed_db/` directory on its first run.
-  - The entire application should be launchable with `docker-compose up`.
-
-## 🛠️ Technology Stack
-
-### Frontend
-- **Framework**: React 18 + TypeScript
-- **UI Library**: Material-UI (MUI) v6
-- **State Management**: Redux Toolkit + RTK Query
-- **Form Handling**: React Hook Form + Zod validation
-- **Build Tool**: Vite
-- **Code Quality**: ESLint, Prettier, Husky
-
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: PostgreSQL
-- **Authentication**: JWT + CSRF protection
-- **Password Hashing**: Argon2
-- **Email Service**: Resend API
-- **Validation**: Zod
-
-### Database
-- **Primary DB**: PostgreSQL
-- **Schema**: Comprehensive school management schema
-- **Features**: Role-based access control, Leave management, Notice system
-
-## 📋 Features
-
-### Core Functionality
-- **Dashboard**: User statistics, notices, birthday celebrations, leave requests
-- **User Management**: Multi-role system (Admin, Student, Teacher, Custom roles)
-- **Academic Management**: Classes, sections, students, class teachers
-- **Leave Management**: Policy definition, request submission, approval workflow
-- **Notice System**: Create, approve, and distribute notices
-- **Staff Management**: Employee profiles, departments, role assignments
-- **Access Control**: Granular permissions system
-
-### Security Features
-- JWT-based authentication with refresh tokens
-- CSRF protection
-- Role-based access control (RBAC)
-- Password reset and email verification
-- Secure cookie handling
-
-## 🔧 Development Guidelines
-
-### Code Standards
-- **File Naming**: kebab-case for consistency across OS
-- **Import Style**: Absolute imports for cleaner code
-- **Code Formatting**: Prettier with consistent configuration
-- **Git Hooks**: Husky for pre-commit quality checks
-
-### Project Structure
-```
-frontend/src/
-├── api/           # API configuration and base setup
-├── assets/        # Static assets (images, styles)
-├── components/    # Shared/reusable components
-├── domains/       # Feature-based modules
-│   ├── auth/      # Authentication module
-│   ├── students/  # Student management
-│   ├── notices/   # Notice system
-│   └── ...
-├── hooks/         # Custom React hooks
-├── routes/        # Application routing
-├── store/         # Redux store configuration
-├── theme/         # MUI theme customization
-└── utils/         # Utility functions
-```
-
-```
-backend/src/
-├── config/        # Database and app configuration
-├── middlewares/   # Express middlewares
-├── modules/       # Feature-based API modules
-│   ├── auth/      # Authentication endpoints
-│   ├── students/  # Student CRUD operations
-│   ├── notices/   # Notice management
-│   └── ...
-├── routes/        # API route definitions
-├── shared/        # Shared utilities and repositories
-├── templates/     # Email templates
-└── utils/         # Helper functions
-```
-
-## 🧪 Testing Instructions
-
-### For Frontend Developers
-1. Navigate to the notices section
-2. Try to create a new notice with description
-3. Verify the description is saved correctly
-4. Test form validation and error handling
-
-### For Backend Developers
-1. Test all student CRUD endpoints using Postman/curl
-2. Verify proper error handling and validation
-3. Check database constraints and relationships
-4. Test authentication and authorization
-
-### For Blockchain Developers
-1. Set up local blockchain environment (Hardhat/Ganache)
-2. Deploy certificate smart contract
-3. Integrate Web3 wallet connection
-4. Test certificate issuance and verification flow
-
-### For Golang Developers
-1. Set up the PostgreSQL database using `seed_db/` files.
-2. Set up and run the Node.js backend by following its setup instructions.
-3. Run the Go service.
-4. Use a tool like `curl` or Postman to make a GET request to the Go service's `/api/v1/students/:id/report` endpoint.
-5. Verify that the Go service correctly calls the Node.js backend and that a PDF file is successfully generated.
-6. Check the contents of the PDF for correctness.
-
-### For DevOps Engineers
-1. Ensure Docker and Docker Compose are installed on your machine.
-2. From the project root, run the command `docker-compose up --build`.
-3. Wait for all services to build and start.
-4. Access the frontend at `http://localhost:5173` and verify the application is running.
-5. Log in with the demo credentials to confirm that the frontend, backend, and database are all communicating correctly.
-
-## 📚 API Documentation
-
-### Authentication Endpoints
-- `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/logout` - User logout
-- `GET /api/v1/auth/refresh` - Refresh access token
-
-### Student Management
-- `GET /api/v1/students` - List all students
-- `POST /api/v1/students` - Create new student
-- `PUT /api/v1/students/:id` - Update student
-- `DELETE /api/v1/students/:id` - Delete student
-
-### Notice Management
-- `GET /api/v1/notices` - List notices
-- `POST /api/v1/notices` - Create notice
-- `PUT /api/v1/notices/:id` - Update notice
-- `DELETE /api/v1/notices/:id` - Delete notice
-
-### PDF Generation Service (Go)
-- `GET /api/v1/students/:id/report` - Generate and download a PDF report for a specific student.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-For questions and support:
-- Create an issue in the repository
-- Check existing documentation in `/frontend/README.md` and `/backend/README.md`
-- Review the database schema in `/seed_db/tables.sql`
+A detailed breakdown of what was already in the codebase versus what has been implemented.
 
 ---
 
-**Happy Coding! 🚀**
+## What Was Already Given (Master Branch)
+
+### 1. students-service.js
+**Provided Functions:**
+- `checkStudentId()` - Validates student exists in DB
+- `getAllStudents()` - Query students with error handling
+- `getStudentDetail()` - Fetch single student details
+- `addNewStudent()` - Add student and send verification email
+- `updateStudent()` - Update student via stored procedure
+- Error handling with ApiError class
+
+### 2. students-repository.js
+**Provided Functions:**
+- `getRoleId()` - Get role ID by name
+- `findAllStudents()` - Query with filters (name, className, section, roll)
+- `addOrUpdateStudent()` - Call stored procedure
+- `findStudentDetail()` - Get student details with JOINs
+- `findStudentToSetStatus()` - Update user status
+- `findStudentToUpdate()` - Update user fields
+- `softDeleteStudentById()` - Soft delete student
+
+### 3. app.js (Basic Setup)
+- Express app initialization
+- Middleware stack (CORS, JSON parsing, static files, cookies)
+- Error handlers registered
+- No logging or observability
+
+### 4. Database Infrastructure
+- PostgreSQL connection pool
+- Schema and seed data
+- Role-based access control tables
+- User profiles and relationships
+
+---
+
+## What I've Implemented
+
+### 1. students-controller.js (Complete Implementation)
+**From scratch - all validation and handlers:**
+
+#### Validation Functions:
+```javascript
+validateIdParam(id)              // Validates positive integers
+validateStudentPayload()         // Validates email, body requirements
+validateEmail(email)             // RFC-compliant pattern
+validateStatusPayload()          // Boolean type checking
+validateUserAuthentication()     // User presence check
+```
+
+#### Handler Functions (6 handlers):
+```javascript
+handleGetAllStudents()           // Lists students with filtering
+handleAddStudent()               // Create with validation + trimming
+handleUpdateStudent()            // Update with URL param as source of truth
+handleGetStudentDetail()         // Get single student
+handleStudentStatus()            // Update status with auth check
+handleDeleteStudent()            // Soft delete with auth
+```
+
+**Key Features Implemented:**
+- Email validation with trim() and empty string checks
+- ID validation for positive integers
+- Authentication checks for sensitive operations
+- Strategic logging at each step
+- Quality logging integration
+- Proper response formatting
+
+### 2. students-service.js (Enhanced)
+**Improvements Made:**
+
+#### Error Handling Enhancement:
+```javascript
+// BEFORE:
+if (affectedRow <= 0) {
+    throw new ApiError(500, "Unable to delete student");  // Wrong status
+}
+
+// AFTER:
+if (affectedRow <= 0) {
+    throw new ApiError(404, "Student not found");  // Semantically correct
+}
+```
+
+**Changes Applied To:**
+- `deleteStudent()` - Changed 500 → 404 (user exists but not a student)
+- `setStudentStatus()` - Changed 500 → 404 (user exists but not a student)
+
+**Reasoning:** When `role_id = 3` check fails in the UPDATE query, it means the resource wasn't found from the student perspective, not an internal server error.
+
+### 3. students-controller.test.js (Complete Test Suite)
+**Created from scratch - 15 comprehensive tests:**
+
+#### Success Path Tests (6 tests):
+- handleGetAllStudents returns 200 with students
+- handleGetStudentDetail returns 200 with student
+- handleAddStudent returns 201 with created student
+- handleUpdateStudent returns 200 with updated student
+- handleStudentStatus returns 200 with status changed
+- handleDeleteStudent returns 204 with no content
+
+#### Validation Tests (9 tests) - Specific error assertions:
+- handleAddStudent validates email is provided
+- handleAddStudent validates email is not empty string
+- handleGetStudentDetail validates positive ID
+- handleUpdateStudent validates positive ID
+- handleUpdateStudent validates body is not empty
+- handleUpdateStudent validates email is not empty string
+- handleStudentStatus validates authentication
+- handleStudentStatus validates status is boolean
+- handleDeleteStudent validates authentication
+
+**Test Specificity:**
+Each validation test asserts:
+- `next()` called with correct ApiError instance
+- HTTP status code (400/401)
+- Error message content
+
+### 4. src/utils/log.js (Created)
+**New file - Professional logging utility:**
+
+```javascript
+// 5 log levels
+log.info()      // General operations
+log.success()   // Successful completion
+log.warn()      // Unexpected but handled
+log.error()     // Errors needing investigation
+log.debug()     // Only when DEBUG=true
+```
+
+**Features:**
+- Timestamp on every log
+- No external dependencies
+- Environment-aware (DEBUG mode)
+- Clean, professional output
+
+**Usage in Controllers:**
+```javascript
+log.info("Creating new student", { email: req.body.email });
+log.success("Student created successfully", { studentId: result.id, email: result.email });
+```
+
+### 5. src/utils/process-db-request.js (Enhanced)
+**Improvements Made:**
+
+#### Added Performance Monitoring:
+```javascript
+// BEFORE: Silent execution
+const result = await db.query(query, queryParams);
+
+// AFTER: Logs slow queries
+if (duration > 1000) {
+    log.warn("Slow database query detected", {
+        queryType: getQueryType(query),
+        duration: `${duration}ms`,
+        rowsAffected: result.rowCount,
+    });
+}
+```
+
+#### Added Error Logging:
+```javascript
+log.error("Database operation failed", {
+    queryType: getQueryType(query),
+    duration: `${duration}ms`,
+    errorMessage: error.message,
+});
+```
+
+### 6. src/middlewares/handle-global-error.js (Enhanced)
+**Improvements Made:**
+
+#### Before:
+```javascript
+// No logging, just error response
+const handleGlobalError = (err, req, res, next) => {
+    const statusCode = err.statusCode || 500;
+    // ...
+}
+```
+
+#### After:
+```javascript
+const log = require("../utils/log");
+
+const handleGlobalError = (err, req, res, next) => {
+    // ... with context logging:
+    log.error(errorMessage, {
+        method: req.method,
+        path: req.path,
+        statusCode: statusCode,
+        stack: process.env.DEBUG === "true" ? err.stack : undefined,
+    });
+}
+```
+
+### 7. src/app.js (Enhanced)
+**Improvements Made:**
+
+#### Before:
+```javascript
+// Silent startup
+app.use("/api/v1", v1Routes);
+```
+
+#### After:
+```javascript
+const log = require("./utils/log");
+
+log.info("Express server initialized", {
+  port: process.env.PORT || 5007,
+  environment: process.env.NODE_ENV || "development"
+});
+```
+
+### 8. LOGGING_APPROACH.md (Created)
+**New documentation:**
+- Logging philosophy and strategy
+- When to log and what not to log
+- Examples for each log level
+- Best practices for developers
+- Environment-specific logging guidance
+
+### 9. README.md (Rewritten for Recruiters)
+**New professional README covering:**
+- What I've implemented with detail
+- Code quality and best practices
+- 10 areas for potential improvements
+- Key technical decisions
+- Project status and production readiness
+
+---
+
+## Summary of Contributions
+
+### Quality Improvements:
+1. Validation logic preventing bad data at entry point
+2. 6 fully implemented API handlers following REST principles
+3. 9 specific validation tests catching real bugs
+4. Professional logging strategy without external dependencies
+5. Semantic error codes (400, 401, 404 vs generic 500)
+6. Email normalization (trim + empty string validation)
+7. Authentication checks on sensitive operations
+8. Database performance monitoring (slow query logging)
+9. 15 passing unit tests (6 success + 9 validation)
+
+### Technical Decisions:
+1. **No external logging**: Kept dependencies minimal while maintaining observability
+2. **Validation in controllers**: Catch errors early before service layer
+3. **Email trimming**: Normalize input data before storage
+4. **Semantic status codes**: 404 for "user exists but not student" instead of 500
+5. **Specific error assertions**: Tests verify actual error handling, not just absence of success
+
+---
+
+## What Was NOT Implemented (Out of Scope)
+
+- Integration tests (only unit tests)
+- Service layer testing
+- Database transaction testing
+- Rate limiting or API security middleware
+- OpenAPI/Swagger documentation
+- Structured JSON logging
+- Request correlation IDs
+- Monitoring/observability platform integration
+- Database indexing strategy
+- Pagination for list endpoints
+
+These are all documented in README.md under "Potential Improvements" with clear justification for their absence in the current implementation.
+
